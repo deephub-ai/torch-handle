@@ -39,12 +39,12 @@ model = {"fn": "model class",
 criterion = {"fn": "loss function  class",
              "args":"Parameters that need to be passed"# optional
              }
-#优化器
+#optimizer
 optimizer = {"fn": "optimizer class",
              "args":"Parameters for create optimizer",# optional
              "params":"different parameters of each  model layers" # optional  see example 01
             }
-#学习率scheduler
+# lr scheduler
 scheduler = {"fn": "lr scheduler class",
              "args": "scheduler arameters",
              "type": "batch/epoch" # call scheduler per epoch/batch  ,default epoch
