@@ -3,7 +3,6 @@
 TorchHandle makes your PyTorch development more efficient and make you use PyTorch more comfortable
 
 torchhandle is an auxiliary framework for PyTorch. It abstracts the cumbersome and repetitive training code of PyTorch, allowing data scientists to focus on data processing, model creation and arameter optimization instead of writing repetitive training loop codes.
-
 Torchhandle will make your code  more concise and readable, and make your development tasks more efficient.
 
 ## Introduction

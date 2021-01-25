@@ -1,73 +1,71 @@
-# torchhandle
+# torchhandle 中文文档
 
-TorchHandle makes your PyTorch development more efficient and make you use PyTorch more comfortable
+torchhandle 让你的PyTorch研发更高效，让你使用PyTorch训练更加顺手
 
-torchhandle is an auxiliary framework for PyTorch. It abstracts the cumbersome and repetitive training code of PyTorch, allowing data scientists to focus on data processing, model creation and arameter optimization instead of writing repetitive training loop codes.
+torchhandle是一个PyTorch的辅助框架。 它将PyTorch繁琐和重复的训练代码抽象出来，使得数据科学家们能够将精力放在数据处理、创建模型和参数优化，而不是编写重复的训练循环代码。
+使用torchhandle，可以让你的代码更加简洁易读，让你的开发任务更加高效。
 
-Torchhandle will make your code  more concise and readable, and make your development tasks more efficient.
 
-## Introduction
-Torchhandle abstractly organizes and extracts the training and inference process of Pytorch, build  deep learning pipeline of PyTorch only need a few lines of code.
+## 主要功能介绍
+torchhandle将Pytorch的训练和推理过程进行了抽象整理和提取，只要使用几行代码就可以实现PyTorch的深度学习管道。
 
-Custom training metrics, cross validation, early stop, gradient accumulation, checkpoint recovery, full training reporting, integrated Tensorboard visualization, and more are all available with a few simple options.
+自定义训练指标、交叉验证、早停机制、梯度累加、检查点恢复、完整训练报告、集成tensorboard可视化等等功能只需要几个简单的选项既可以实现。
 
-[中文文档](docs/zh-cn/)
-
-### Install
+### 安装
 
 ```bash
 pip install -U torchhandle
 ```
+torchhandle的需要的依赖库非常的少，只需要几个常用的python库即可运行，我们推荐的库版本如下
 
+ - Python 3.6+
+ - PyTorch 1.5 + （1.1+即可，建议 1.5以上版本）
+ - tqdm 4.33.0 +
+ - matplotlib 
+ - OS （Centos7、Ubuntu）,Windows 10, Colab,Kaggle 已测试 ,macOS 未测试
 
-TorchHandle requires very few dependent libraries to run. The recommended versions of the libraries are as follows
-
-- Python 3.6 +
-- PyTorch 1.5 + (1.1+ will ok, preferably 1.5 +)
-- tqdm 4.33.0 +
-- matplotlib
-- OS (Centos7, Ubuntu),Windows 10, Colab,Kaggle tested, MacOS not tested
-
-### Quick Start 
+### 快速开始
 ```python
-#model
-model = {"fn": "model class",
-         "args":"Parameters that need to be passed to model"# optional
+
+#网络模型
+model = {"fn": "模型的class或者返回模型实例的函数",
+         "args":"模型或函数需要传递的参数"# 可选
         } 
 
-#loss function
-criterion = {"fn": "loss function  class",
-             "args":"Parameters that need to be passed"# optional
+#损失函数
+criterion = {"fn": "损失函数类",
+             "args":"损失函数参数"# 可选
              }
 #优化器
-optimizer = {"fn": "optimizer class",
-             "args":"Parameters for create optimizer",# optional
-             "params":"different parameters of each  model layers" # optional  see example 01
+optimizer = {"fn": "优化器类",
+             "args":"优化器参数",# 可选
+             "params":"针对网络的不同层设定不同的参数" # example 01
             }
 #学习率scheduler
-scheduler = {"fn": "lr scheduler class",
-             "args": "scheduler arameters",
-             "type": "batch/epoch" # call scheduler per epoch/batch  ,default epoch
-             }
+scheduler = {"fn": "scheduler类",
+             "args": "scheduler参数",
+             "type": "batch/epoch" # 调用scheduler的类型，默认epoch
+                 }
 
 #dataloader
-loaders = {"train": "train dataloader",  
-           "valid": "valid dataloader" # optional 
+loaders = {"train": "训练集的dataloader",  
+           "valid": "验证集的dataloader" # 可选的 
            }
 ```
 
-### Workflow object definition
 
-Context: The Context of the training environment, containing the model to be trained, optimizer, loss function, scheduler, and other parameter that not change in train loop
+### workflow对象定义
 
-Session: Session object is created according to the context. Each Session holds a separate model object, optimizer, etc. and cross-validation can be achieved by creating different sessions in  one Context
+Context: 训练环境的上下文，包含需要训练的模型，优化器，损失函数，scheduler和其他一些固定的配置信息
 
-Metric: Custom metrics
+Session: 根据上下文创建的训练Session，每个session保存独立的模型，优化器等对象，在一个上下文中创建不同的session可以实现交叉验证
 
-## Examples
+Metric: 训练的指标，除损失函数外的训练指标
+
+## 使用例子
 
 <details>
-<summary>01 ML - MLP with different learning rate for specific layer</summary>
+<summary>01 ML - 训练多层感知机，每层优化器设置不同的参数</summary>
 <p>
 
 ```python
@@ -122,7 +120,7 @@ train.train(epochs=10)
 </details>
 
 <details>
-<summary>02 ML - linear regression with early stopping by custom metrics and save all metrics to tensorboard</summary>
+<summary>02 ML - 使用自定义指标和早停机制训练线性回归，训练数据保存到tensorflow中</summary>
 <p>
 
 ```python
@@ -201,7 +199,7 @@ print("this line was not write to log file")
 </details>
 
 <details>
-<summary>03 ML - Cross Validation </summary>
+<summary>03 ML - 交叉验证 </summary>
 <p>
 
 ```python
@@ -246,7 +244,7 @@ for i in range(5):
 </details>
 
 <details>
-<summary>04 CV mnist - Training built-in model and dataset using gradient accumulation</summary>
+<summary>04 CV mnist - 使用梯度积累训练pytorch内置模型和数据集</summary>
 <p>
 
 ```python
@@ -330,7 +328,7 @@ session.train(10)
 </details>
 
 <details>
-<summary>05 CV mnist - lr_scheduler per batch  </summary>
+<summary>05 CV mnist - 没批次调用 lr_scheduler   </summary>
 <p>
 
 ```python
@@ -394,23 +392,24 @@ session.train(EPOCHS)
 
 ## TODO
 
-inference function
+推理函数实现
 
-Checkpoint 
+session的检查点功能
 
-XLA（TPU） Support
+TPU支持
 
-Distributed Training
+分布式训练
 
-More examples
+更多的样例
 
-## Contact us
-If you don't like GitHub issues, contact us at deephub.ai[at]gmail.com.
+## 联系我们
 
-If you planning to contribute  bug fixes, please do PR.
+如果你不喜欢Github的issues，可以使用以下邮箱和我们取得联系  deephub.ai[at]gmail.com。
 
-If you planning to contribute new  features , please first open an issue and discuss the feature with us.
+如果你想提供bug修复，请直接PR。
 
-If you would like to start a collaboration between your team and deephub, or join our team for better deep learning development, you are always welcome.
+如果你计划贡献功能或扩展，请首先创建issue并与我们确认。
 
-If you have any questions, please feel free to send us an email, and we welcome and appreciate any kind of contribution and feedback.
+如果您希望您的团队和我们进行合作，或者加入我们更好地进行深度学习研发，欢迎您的参与。
+
+最后，如果你有任何的问题，都可以给我们发送邮件，我们欢迎并感谢任何形式的贡献和反馈。
