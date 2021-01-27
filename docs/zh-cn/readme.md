@@ -120,7 +120,7 @@ train.train(epochs=10)
 </details>
 
 <details>
-<summary>02 ML - 使用自定义指标和早停机制训练线性回归，训练数据保存到tensorflow中</summary>
+<summary>02 ML - 使用自定义指标和早停机制训练线性回归，训练数据保存到tensorboard中</summary>
 <p>
 
 ```python
@@ -328,7 +328,7 @@ session.train(10)
 </details>
 
 <details>
-<summary>05 CV mnist - 没批次调用 lr_scheduler   </summary>
+<summary>05 CV mnist - 每批次调用 lr_scheduler   </summary>
 <p>
 
 ```python
@@ -391,6 +391,10 @@ session.train(EPOCHS)
 </details>
 
 ## TODO
+
+微调支持
+
+torch混合精度
 
 推理函数实现
 

@@ -394,6 +394,10 @@ session.train(EPOCHS)
 
 ## TODO
 
+Fine-tunning setting
+
+torch AMP
+
 inference function
 
 Checkpoint 
