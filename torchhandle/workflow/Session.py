@@ -281,10 +281,10 @@ class Session(ObjectDict):
                 # save best model
                 if isinstance(best_value, dict) and best_value["epoch"] == self.epoch_metric["epoch"]:
                     print(f"save best model : {t}_{mk} , {self.epoch_metric['epoch']}")
-                    filename = f"bestmodel_{t}_{mk}.pth"
+                    best_filename = f"bestmodel_{t}_{mk}.pth"
                     if len(self.fold_tag) > 0:
-                        filename = f"fold_{self.fold_tag}_bestmodel_{t}_{mk}.pth"
-                    torch.save(self.model.state_dict(), str(self.session_dir / filename))
+                        best_filename = f"fold_{self.fold_tag}_bestmodel_{t}_{mk}.pth"
+                    torch.save(self.model.state_dict(), str(self.session_dir / best_filename))
 
         # save file
         with open(str(self.session_dir / filename), "w") as f:
