@@ -18,7 +18,7 @@ URL = 'https://github.com/deephub-ai/torch-handle'
 EMAIL = 'deephub.ai@gmail.com'
 AUTHOR = 'Hengtao Tantai'
 REQUIRES_PYTHON = '>=3.6.0'
-VERSION = '0.6.2101b'
+VERSION = '0.6.2102'
 
 # What packages are required for this module to be executed?
 REQUIRED = [

@@ -2,7 +2,7 @@ import time
 from pathlib import Path
 
 import torch
-
+import numpy as np
 from torchhandle.utils import ObjectDict
 from torchhandle.workflow.Metric import Metric
 from torchhandle.workflow.Session import Session
@@ -37,11 +37,13 @@ class BaseContext(ObjectDict):
         if self.output_dir is not None:
             self.output_dir = Path(self.output_dir)
         self.metric_keys = {"loss": "min"}
+        self.metric_agg_fn={"loss": np.mean}
         for i in range(len(self.metric_fn)):
             if isinstance(self.metric_fn[i], Metric):
                 m = self.metric_fn[i]
                 for j in range(len(m.name)):
                     self.metric_keys[m.name[j]] = m.best[j]
+                    self.metric_agg_fn[m.name[j]] = m.agg_fn[j]
 
     #############################
     # Context

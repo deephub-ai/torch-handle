@@ -1,5 +1,5 @@
 import torch
-
+import numpy as np
 from torchvision import datasets, transforms,models
 from torchhandle.workflow import BaseContext,Metric
 
@@ -24,6 +24,9 @@ class ACCU(Metric):
     @property
     def best(self):
         return ["max","min"]
+    @property
+    def agg_fn(self) -> list:
+        return [np.mean,np.sum]
 
     def calculate(self,session):
         pred = session.state.output_batch.detach().cpu()

@@ -112,12 +112,12 @@ class Session(ObjectDict):
             RedirectStart(str(lfn))
 
         self.show_session_summary(epochs)
-        # train epoch start
-        self.model.train()
         self.metric_epoch_list = []
         # call context init_state_fn(), initialize state
         self.state = self.ctx.init_state_fn()
         for epoch in range(1, epochs + 1):
+            # train epoch start
+            self.model.train()
             self.state.current_epoch = epoch
             self.epoch_metric = {"epoch": epoch}
             train_dataloader = self.train_dl
@@ -148,7 +148,7 @@ class Session(ObjectDict):
                         self.ctx.scheduler_step_fn(self)
 
             # cal and print train mean metric
-            self.epoch_metric.update(self.cal_mean_metric(train_epoch_metric_list, stage="train"))
+            self.epoch_metric.update(self.agg_metric(train_epoch_metric_list, stage="train"))
             self.ctx.epoch_train_end_fn(self)
             # valid
             self.model.eval()
@@ -169,7 +169,7 @@ class Session(ObjectDict):
                             print(f'VALID : {batch_num + 1} / {self.valid_dl_len} | {self.state.metric}')
                     vaild_epoch_metric_list.append(self.state.metric)
                     # cal valid mean metric
-                    self.epoch_metric.update(self.cal_mean_metric(vaild_epoch_metric_list, stage="valid"))
+                    self.epoch_metric.update(self.agg_metric(vaild_epoch_metric_list, stage="valid"))
 
             # epoch scheduler
             if self.scheduler is not None and self.scheduler_type == "epoch":
@@ -207,11 +207,11 @@ class Session(ObjectDict):
         print("end train")
         RedirectStop()
 
-    def cal_mean_metric(self, epoch_metric_list, stage="train"):
-        mean_metric = {}
+    def agg_metric(self, epoch_metric_list, stage="train"):
+        metric_list = {}
         for key in self.ctx.metric_keys.keys():
-            mean_metric[f"{stage}_{key}"] = statistics.mean(item[key] for item in epoch_metric_list)
-        return mean_metric
+            metric_list[f"{stage}_{key}"] = self.ctx.metric_agg_fn[key]([item[key] for item in epoch_metric_list]).tolist()
+        return metric_list
 
     def print_epoch_metric(self):
         print("\r", "*" * 10, " EPOCH METRICS ", "*" * 10)

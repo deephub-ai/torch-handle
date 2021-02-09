@@ -1,5 +1,5 @@
 import torch
-
+import numpy as np
 from torchhandle.workflow import BaseContext,Metric
 
 import math
@@ -41,6 +41,9 @@ class RMSE(Metric):
     def best(self) -> list:
         return ["min"]
 
+    @property
+    def agg_fn(self) -> list:
+        return [np.mean]
 
 
 if __name__ == "__main__":
