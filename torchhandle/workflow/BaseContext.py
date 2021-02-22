@@ -37,13 +37,12 @@ class BaseContext(ObjectDict):
         if self.output_dir is not None:
             self.output_dir = Path(self.output_dir)
         self.metric_keys = {"loss": "min"}
-        self.metric_agg_fn={"loss": np.mean}
         for i in range(len(self.metric_fn)):
             if isinstance(self.metric_fn[i], Metric):
                 m = self.metric_fn[i]
                 for j in range(len(m.name)):
                     self.metric_keys[m.name[j]] = m.best[j]
-                    self.metric_agg_fn[m.name[j]] = m.agg_fn[j]
+                    #self.metric_agg_fn[m.name[j]] = m.agg_fn[j]
 
     #############################
     # Context
@@ -123,6 +122,8 @@ class BaseContext(ObjectDict):
         x = session.state.input_batch.to(session.device)
         session.state.output_batch = session.model(x)
 
+
+
     def loss_fn(self, session: Session):
         """
         Calculate the loss function
@@ -131,6 +132,7 @@ class BaseContext(ObjectDict):
         """
         y = session.state.target_batch.to(session.device)
         session.state.loss = session.criterion(session.state.output_batch, y)
+
 
     def backward_fn(self, session: Session):
         """
@@ -163,18 +165,28 @@ class BaseContext(ObjectDict):
         :return:
         """
         loss = session.state.loss.cpu().detach()
-
+        target=session.state.target_batch.cpu().detach()
+        output=session.state.output_batch.cpu().detach()
         metric = {}
 
         if len(loss.size()) == 0:
             metric["loss"] = loss.item()
         else:
             metric["loss"] = torch.mean(loss).item()
+        if session.stage in ["train","valid"]:
+            if session.batch_data[session.stage]["output"] is None:
+                session.batch_data[session.stage]["output"]=output
+            else:
+                session.batch_data[session.stage]["output"]=torch.cat([session.batch_data[session.stage]["output"],output],dim=0)
 
-        for m in self.metric_fn:
-            mt = m.calculate(session)
-            for i in range(len(m.name)):
-                metric[m.name[i]] = mt[i]
+            if session.batch_data[session.stage]["target"] is None:
+                session.batch_data[session.stage]["target"]=target
+            else:
+                session.batch_data[session.stage]["target"]=torch.cat([session.batch_data[session.stage]["target"],target],dim=0)
+
+            session.batch_data[session.stage]["loss"].append(metric["loss"])
+
+
         session.state.metric = metric
 
     def ga_steps(self, session: Session):

@@ -1,8 +1,8 @@
 import torch
 import numpy as np
 from torchhandle.workflow import BaseContext,Metric
+from sklearn.metrics import mean_squared_error
 
-import math
 
 
 class C1(BaseContext):
@@ -29,8 +29,8 @@ class C1(BaseContext):
 
 class RMSE(Metric):
 
-    def calculate(self, session) -> list:
-        rmse = math.sqrt(session.state.loss)
+    def calculate(self, epoch_data) -> list:
+        rmse = np.sqrt(mean_squared_error(epoch_data["target"].numpy(), epoch_data["output"].numpy()))
         return [rmse]
 
     @property
@@ -40,10 +40,6 @@ class RMSE(Metric):
     @property
     def best(self) -> list:
         return ["min"]
-
-    @property
-    def agg_fn(self) -> list:
-        return [np.mean]
 
 
 if __name__ == "__main__":

@@ -24,13 +24,10 @@ class ACCU(Metric):
     @property
     def best(self):
         return ["max","min"]
-    @property
-    def agg_fn(self) -> list:
-        return [np.mean,np.sum]
 
-    def calculate(self,session):
-        pred = session.state.output_batch.detach().cpu()
-        targets = session.state.target_batch
+    def calculate(self,epoch_data):
+        pred = epoch_data["output"]
+        targets = epoch_data["target"]
         pred = torch.argmax(pred, 1)
         correct = (pred == targets).sum().float()
         total = len(targets)

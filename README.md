@@ -158,8 +158,8 @@ class C1(BaseContext):
 
 class RMSE(Metric):
 
-    def calculate(self, session) -> list:
-        rmse = math.sqrt(session.state.loss)
+    def calculate(self, epoch_data) -> list:
+        rmse = np.sqrt(mean_squared_error(epoch_data["target"].numpy(), epoch_data["output"].numpy()))
         return [rmse]
 
     @property
@@ -278,9 +278,9 @@ class ACCU(Metric):
     def best(self):
         return ["max","min"]
 
-    def calculate(self,session):
-        pred = session.state.output_batch.detach().cpu()
-        targets = session.state.target_batch
+    def calculate(self,epoch_data):
+        pred = epoch_data["output"]
+        targets = epoch_data["target"]
         pred = torch.argmax(pred, 1)
         correct = (pred == targets).sum().float()
         total = len(targets)

@@ -92,8 +92,12 @@ class Session(ObjectDict):
         else:
             self.valid_dl = None
             self.valid_dl_len = 0
+        self.stage=""
+        #epoch per metric
         self.epoch_metric = {}
         self.metric_epoch_list = []
+        self.batch_data = ObjectDict(train={},valid={})
+
 
     def show_session_summary(self, epochs):
         print("=" * 10, "SESSION SUMMARY BEGIN", "=" * 10)
@@ -114,9 +118,14 @@ class Session(ObjectDict):
         self.show_session_summary(epochs)
         self.metric_epoch_list = []
         # call context init_state_fn(), initialize state
+
         self.state = self.ctx.init_state_fn()
         for epoch in range(1, epochs + 1):
             # train epoch start
+            self.stage="train"
+            self.batch_data.train["output"] = None
+            self.batch_data.train["target"] = None
+            self.batch_data.train["loss"] = []
             self.model.train()
             self.state.current_epoch = epoch
             self.epoch_metric = {"epoch": epoch}
@@ -127,7 +136,7 @@ class Session(ObjectDict):
             if self.progress == "bar":
                 train_dataloader = tqdm(train_dataloader, desc=f"TRAIN {desc}", bar_format=self.bar_format, ncols=100)
             self.ctx.epoch_start_fn(self)
-            train_epoch_metric_list = []
+
             # batch start
             for batch_num, data in enumerate(train_dataloader):
                 self.state.current_batch = batch_num
@@ -141,19 +150,23 @@ class Session(ObjectDict):
                 elif isinstance(self.progress, int) and self.progress > 0:
                     if (batch_num + 1) % self.progress == 0 or (batch_num + 1) == self.train_dl_len:
                         print(f'TRAIN: {batch_num + 1} / {self.train_dl_len} | {self.state.metric}')
-                train_epoch_metric_list.append(self.state.metric)
+
                 # batch scheduler
                 if self.scheduler is not None and self.scheduler_type == "batch":
                     if self.ctx.ga_steps(self):
                         self.ctx.scheduler_step_fn(self)
 
-            # cal and print train mean metric
-            self.epoch_metric.update(self.agg_metric(train_epoch_metric_list, stage="train"))
+            # cal and print train metric pre epoch
+            self.epoch_metric.update(self.agg_metric())
             self.ctx.epoch_train_end_fn(self)
             # valid
+            self.stage="valid"
             self.model.eval()
             if self.valid_dl is not None:
-                vaild_epoch_metric_list = []
+                self.batch_data.valid["output"] = None
+                self.batch_data.valid["target"] = None
+                self.batch_data.valid["loss"] = []
+
                 valid_dataloader = self.valid_dl
                 if self.progress == "bar":
                     valid_dataloader = tqdm(valid_dataloader, desc=f"VALID {desc}", bar_format=self.bar_format,
@@ -167,9 +180,9 @@ class Session(ObjectDict):
                     elif isinstance(self.progress, int) and self.progress > 0:
                         if (batch_num + 1) % self.progress == 0 or (batch_num + 1) == self.train_dl_len:
                             print(f'VALID : {batch_num + 1} / {self.valid_dl_len} | {self.state.metric}')
-                    vaild_epoch_metric_list.append(self.state.metric)
-                    # cal valid mean metric
-                    self.epoch_metric.update(self.agg_metric(vaild_epoch_metric_list, stage="valid"))
+
+            # cal valid  metric
+            self.epoch_metric.update(self.agg_metric())
 
             # epoch scheduler
             if self.scheduler is not None and self.scheduler_type == "epoch":
@@ -200,18 +213,29 @@ class Session(ObjectDict):
                 break
             else:
                 self.ctx.valid_end_fn(self.state)
-
+        self.stage = ""
         # end train
         if self.writer:
             self.writer.close()
         print("end train")
         RedirectStop()
 
-    def agg_metric(self, epoch_metric_list, stage="train"):
-        metric_list = {}
-        for key in self.ctx.metric_keys.keys():
-            metric_list[f"{stage}_{key}"] = self.ctx.metric_agg_fn[key]([item[key] for item in epoch_metric_list]).tolist()
-        return metric_list
+    def agg_metric(self):
+        #metric_list = {}
+        metric = {}
+        data=self.batch_data[self.stage]
+        for m in self.ctx.metric_fn:
+            mt = m.calculate(data)
+            for i in range(len(m.name)):
+                if type(mt[i]) is np.ndarray:
+                    metric[f"{self.stage}_{m.name[i]}"] = mt[i].tolist()
+                else:
+                    metric[f"{self.stage}_{m.name[i]}"] = mt[i]
+
+        #loss
+        metric[f"{self.stage}_loss"] = np.mean(data["loss"])
+
+        return metric
 
     def print_epoch_metric(self):
         print("\r", "*" * 10, " EPOCH METRICS ", "*" * 10)
@@ -265,6 +289,7 @@ class Session(ObjectDict):
         rep["epoch_metric_list"] = self.metric_epoch_list
         # best
         ml = self.metric_epoch_list.copy()
+
         tag = ["train"]
         if self.valid_dl_len > 0:
             tag.append("valid")
