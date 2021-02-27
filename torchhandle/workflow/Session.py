@@ -1,5 +1,4 @@
 import json
-import statistics
 from pprint import pprint
 
 import numpy as np
@@ -17,6 +16,7 @@ class Session(ObjectDict):
         self.tensorboard = True
         self.bar_format = "{desc}:{n_fmt}/{total_fmt} [{elapsed}<{remaining},{rate_fmt}]{postfix}"
         self.update(kwargs)
+
         if not isinstance(self.fold_tag, str):
             self.fold_tag = str(self.fold_tag)
         # init dir
@@ -41,9 +41,11 @@ class Session(ObjectDict):
         self.model = self.ctx.model["fn"](**model_args)
         if self.model_file is not None:
             # session model frist
+            print(f"load session model :{self.model_file}")
             self.model.load_state_dict(torch.load(str(self.model_file), map_location=torch.device('cpu')))
         else:
             if self.ctx.model_file is not None:
+                print(f"load context model :{self.model_file}")
                 self.model.load_state_dict(torch.load(str(self.ctx.model_file), map_location=torch.device('cpu')))
 
         self.model = self.model.to(self.device)
@@ -92,12 +94,25 @@ class Session(ObjectDict):
         else:
             self.valid_dl = None
             self.valid_dl_len = 0
-        self.stage=""
-        #epoch per metric
+        self.stage = ""
+        # epoch per metric
         self.epoch_metric = {}
         self.metric_epoch_list = []
-        self.batch_data = ObjectDict(train={},valid={})
-
+        # self.batch_data = ObjectDict(train={},valid={})
+        # self.loss_list=ObjectDict(train={},valid={})
+        self.train_metric = []
+        self.valid_metric = []
+        for mf in self.ctx.metric_fn:
+            metric_args = {}
+            if "args" in mf:
+                metric_args = mf["args"]
+            self.train_metric.append(mf["fn"](**metric_args))
+            self.valid_metric.append(mf["fn"](**metric_args))
+        self.metric_keys = ObjectDict()
+        for i in range(len(self.train_metric)):
+            m = self.train_metric[i]
+            for j in range(len(m.name)):
+                self.metric_keys[m.name[j]] = m.best[j]
 
     def show_session_summary(self, epochs):
         print("=" * 10, "SESSION SUMMARY BEGIN", "=" * 10)
@@ -117,15 +132,11 @@ class Session(ObjectDict):
 
         self.show_session_summary(epochs)
         self.metric_epoch_list = []
-        # call context init_state_fn(), initialize state
 
         self.state = self.ctx.init_state_fn()
         for epoch in range(1, epochs + 1):
             # train epoch start
-            self.stage="train"
-            self.batch_data.train["output"] = None
-            self.batch_data.train["target"] = None
-            self.batch_data.train["loss"] = []
+            self.stage = "train"
             self.model.train()
             self.state.current_epoch = epoch
             self.epoch_metric = {"epoch": epoch}
@@ -160,12 +171,9 @@ class Session(ObjectDict):
             self.epoch_metric.update(self.agg_metric())
             self.ctx.epoch_train_end_fn(self)
             # valid
-            self.stage="valid"
+            self.stage = "valid"
             self.model.eval()
             if self.valid_dl is not None:
-                self.batch_data.valid["output"] = None
-                self.batch_data.valid["target"] = None
-                self.batch_data.valid["loss"] = []
 
                 valid_dataloader = self.valid_dl
                 if self.progress == "bar":
@@ -221,18 +229,30 @@ class Session(ObjectDict):
         RedirectStop()
 
     def agg_metric(self):
-        #metric_list = {}
         metric = {}
-        data=self.batch_data[self.stage]
+        for m in self[f"{self.stage}_metric"]:
+            mt = m.reduce()
+            for i in range(len(mt)):
+                if torch.is_tensor(mt[i]):
+                    metric[f"{self.stage}_{m.name[i]}"] = mt[i].item()
+                elif isinstance(mt[i], np.ndarray):
+                    metric[f"{self.stage}_{m.name[i]}"] = mt[i].tolist()
+                else:
+                    metric[f"{self.stage}_{m.name[i]}"] = mt[i]
+        return metric
+        # metric_list = {}
+        metric = {}
         for m in self.ctx.metric_fn:
-            mt = m.calculate(data)
+            mt = m.reduce()
             for i in range(len(m.name)):
-                if type(mt[i]) is np.ndarray:
+                if torch.is_tensor(mt[i]):
+                    metric[f"{self.stage}_{m.name[i]}"] = mt[i].item()
+                elif isinstance(mt[i], np.ndarray):
                     metric[f"{self.stage}_{m.name[i]}"] = mt[i].tolist()
                 else:
                     metric[f"{self.stage}_{m.name[i]}"] = mt[i]
 
-        #loss
+        # loss
         metric[f"{self.stage}_loss"] = np.mean(data["loss"])
 
         return metric
@@ -252,7 +272,7 @@ class Session(ObjectDict):
         if len(self.fold_tag) > 0:
             main_tag = f"{self.ctx.context_tag}_fold_{self.fold_tag}"
         # metrics
-        for mk in self.ctx.metric_keys.keys():
+        for mk in self.metric_keys.keys():
             scalars = {}
             for t in ["train", "valid"]:
                 k = f"{t}_{mk}"
@@ -293,7 +313,8 @@ class Session(ObjectDict):
         tag = ["train"]
         if self.valid_dl_len > 0:
             tag.append("valid")
-        for mk, mv in self.ctx.metric_keys.items():
+        for mk, mv in self.metric_keys.items():
+
             for t in tag:
                 ml.sort(key=lambda x: x[f"{t}_{mk}"])
                 if mv == "min":
@@ -312,6 +333,7 @@ class Session(ObjectDict):
                     torch.save(self.model.state_dict(), str(self.session_dir / best_filename))
 
         # save file
+
         with open(str(self.session_dir / filename), "w") as f:
             json.dump(rep, f, indent=3, separators=(',', ':'))
 

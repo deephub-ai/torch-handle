@@ -157,9 +157,21 @@ class C1(BaseContext):
         return False
 
 class RMSE(Metric):
+    def __init__(self):
+        self.diff = None
 
-    def calculate(self, epoch_data) -> list:
-        rmse = np.sqrt(mean_squared_error(epoch_data["target"].numpy(), epoch_data["output"].numpy()))
+    def map(self, state):
+
+        target = state.target_batch.cpu().detach().unsqueeze(dim=1)
+        output = state.output_batch.cpu().detach()
+        if self.diff is None:
+            self.diff = torch.pow(target - output, 2)
+        else:
+            self.diff = torch.cat([self.diff, torch.pow(target - output, 2)], dim=0)
+
+    def reduce(self):
+        mse = torch.sum(self.diff) / self.diff.shape[0]
+        rmse = torch.sqrt(mse)
         return [rmse]
 
     @property
@@ -185,7 +197,7 @@ criterion = {"fn": torch.nn.MSELoss
              }
 optimizer = {"fn": torch.optim.Adam
              }
-metric_fn = [RMSE()]
+metric_fn = [{"fn": RMSE}]
 c = C1(model=model,
                 criterion=criterion,
                 optimizer=optimizer,
@@ -270,21 +282,48 @@ class Model(torch.nn.Module):
         x= self.resnet18(x)
         return x
 class ACCU(Metric):
+    def __init__(self):
+        self.target_list = None
+        self.pred_list = None
+
+        self.correct = None
+
     @property
     def name(self):
-        return ["accuracy","fake_metric"]
+        return ["accuracy", "accuracy_score"]
 
     @property
     def best(self):
-        return ["max","min"]
+        return ["max", "max"]
 
-    def calculate(self,epoch_data):
-        pred = epoch_data["output"]
-        targets = epoch_data["target"]
-        pred = torch.argmax(pred, 1)
-        correct = (pred == targets).sum().float()
-        total = len(targets)
-        return [(correct/total).item(),session.state.current_epoch]
+    def map(self, state):
+        target = state.target_batch.cpu().detach()
+        output = state.output_batch.cpu().detach()
+        pred = torch.argmax(output, 1)
+        # example 1 :suggest way cal metric
+
+        correct = (pred == target)
+        if self.correct is None:
+            self.correct = correct
+        else:
+            self.correct = torch.cat([self.correct, correct], dim=0)
+
+        # example 2 save output and cal by sklearn
+        if self.target_list is None:
+            self.target_list = target
+        else:
+            self.target_list = torch.cat([self.target_list, target], dim=0)
+        if self.pred_list is None:
+            self.pred_list = pred
+        else:
+            self.pred_list = torch.cat([self.pred_list, pred], dim=0)
+
+    def reduce(self):
+        # example 1
+        out1 = self.correct.sum().float() / self.correct.shape[0]
+        # example 2
+        out2 = accuracy_score(self.target_list.numpy(), self.pred_list.numpy())
+        return [out1, out2]
 
 
 transform = transforms.Compose([transforms.ToTensor(),
@@ -314,7 +353,7 @@ c = BaseContext(model=model,
                 criterion=criterion,
                 optimizer=optimizer,
                 scheduler=scheduler,
-                metric_fn=[ACCU()],
+                metric_fn=[{"fn": ACCU}],
                 output_dir="./outputs",
                 progress=20,
                 ga_step_size=4,

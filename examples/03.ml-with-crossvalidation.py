@@ -2,7 +2,6 @@ import torch
 
 from torchhandle.workflow import BaseContext
 
-
 if __name__ == "__main__":
     num_samples, num_features = int(1e4), int(1e1)
     print(num_samples, num_features)
@@ -28,10 +27,9 @@ if __name__ == "__main__":
                     context_tag="ex03")
     for i in range(5):
         # use all data just for  for demo , not actual Kford
-        trn_loader = torch.utils.data.DataLoader(dataset, batch_size=64, num_workers=0,shuffle=True)
+        trn_loader = torch.utils.data.DataLoader(dataset, batch_size=64, num_workers=0, shuffle=True)
         val_loader = torch.utils.data.DataLoader(dataset, batch_size=128, num_workers=0)
         loaders = {"train": trn_loader, "valid": val_loader}
 
-        session=c.make_train_session(device,dataloader=loaders,fold_tag=i)
+        session = c.make_train_session(device, dataloader=loaders, fold_tag=i)
         session.train(10)
-

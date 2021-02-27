@@ -2,9 +2,9 @@ import time
 from pathlib import Path
 
 import torch
-import numpy as np
+
 from torchhandle.utils import ObjectDict
-from torchhandle.workflow.Metric import Metric
+from torchhandle.workflow.Metric import metric_loss
 from torchhandle.workflow.Session import Session
 
 
@@ -36,13 +36,13 @@ class BaseContext(ObjectDict):
         self.update(kwargs)
         if self.output_dir is not None:
             self.output_dir = Path(self.output_dir)
-        self.metric_keys = {"loss": "min"}
-        for i in range(len(self.metric_fn)):
-            if isinstance(self.metric_fn[i], Metric):
-                m = self.metric_fn[i]
-                for j in range(len(m.name)):
-                    self.metric_keys[m.name[j]] = m.best[j]
-                    #self.metric_agg_fn[m.name[j]] = m.agg_fn[j]
+        self.metric_fn.append({"fn": metric_loss})
+        # for i in range(len(self.metric_fn)):
+        #    if isinstance(self.metric_fn[i], Metric):
+        #        m = self.metric_fn[i]
+        #        for j in range(len(m.name)):
+        #            self.metric_keys[m.name[j]] = m.best[j]
+        #            #self.metric_agg_fn[m.name[j]] = m.agg_fn[j]
 
     #############################
     # Context
@@ -122,8 +122,6 @@ class BaseContext(ObjectDict):
         x = session.state.input_batch.to(session.device)
         session.state.output_batch = session.model(x)
 
-
-
     def loss_fn(self, session: Session):
         """
         Calculate the loss function
@@ -132,7 +130,6 @@ class BaseContext(ObjectDict):
         """
         y = session.state.target_batch.to(session.device)
         session.state.loss = session.criterion(session.state.output_batch, y)
-
 
     def backward_fn(self, session: Session):
         """
@@ -164,28 +161,33 @@ class BaseContext(ObjectDict):
         :param session:
         :return:
         """
-        loss = session.state.loss.cpu().detach()
-        target=session.state.target_batch.cpu().detach()
-        output=session.state.output_batch.cpu().detach()
+        # loss = session.state.loss.cpu().detach()
+        # target=session.state.target_batch.cpu().detach()
+        # output=session.state.output_batch.cpu().detach()
+        for mt in session[f"{session.stage}_metric"]:
+            mt.map(session.state)
+        return
+        ###
         metric = {}
 
         if len(loss.size()) == 0:
             metric["loss"] = loss.item()
         else:
             metric["loss"] = torch.mean(loss).item()
-        if session.stage in ["train","valid"]:
+        if session.stage in ["train", "valid"]:
             if session.batch_data[session.stage]["output"] is None:
-                session.batch_data[session.stage]["output"]=output
+                session.batch_data[session.stage]["output"] = output
             else:
-                session.batch_data[session.stage]["output"]=torch.cat([session.batch_data[session.stage]["output"],output],dim=0)
+                session.batch_data[session.stage]["output"] = torch.cat(
+                    [session.batch_data[session.stage]["output"], output], dim=0)
 
             if session.batch_data[session.stage]["target"] is None:
-                session.batch_data[session.stage]["target"]=target
+                session.batch_data[session.stage]["target"] = target
             else:
-                session.batch_data[session.stage]["target"]=torch.cat([session.batch_data[session.stage]["target"],target],dim=0)
+                session.batch_data[session.stage]["target"] = torch.cat(
+                    [session.batch_data[session.stage]["target"], target], dim=0)
 
             session.batch_data[session.stage]["loss"].append(metric["loss"])
-
 
         session.state.metric = metric
 
