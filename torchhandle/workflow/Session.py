@@ -15,6 +15,7 @@ class Session(ObjectDict):
         self.fold_tag = ""
         self.tensorboard = True
         self.bar_format = "{desc}:{n_fmt}/{total_fmt} [{elapsed}<{remaining},{rate_fmt}]{postfix}"
+        self.ft_args=None
         self.update(kwargs)
 
         if not isinstance(self.fold_tag, str):
@@ -47,7 +48,12 @@ class Session(ObjectDict):
             if self.ctx.model_file is not None:
                 print(f"load context model :{self.model_file}")
                 self.model.load_state_dict(torch.load(str(self.ctx.model_file), map_location=torch.device('cpu')))
-
+        # Finetune
+        if self.ctx.ft_fn is not None:
+            if self.ft_args is not None:
+                self.ft(self,**self.ft_args)
+            else :
+                self.ft(self)
         self.model = self.model.to(self.device)
         criterion_args = {}
         if "args" in self.ctx.criterion:
@@ -124,6 +130,7 @@ class Session(ObjectDict):
         print("=" * 10, "SESSION SUMMARY END", "=" * 10)
 
     def train(self, epochs):
+        self.ctx.train_start_fn(self)
         if self.session_dir is not None and self.logging_file is not None:
             lfn = self.session_dir / self.logging_file
             if len(self.fold_tag) > 0:
@@ -189,8 +196,8 @@ class Session(ObjectDict):
                         if (batch_num + 1) % self.progress == 0 or (batch_num + 1) == self.train_dl_len:
                             print(f'VALID : {batch_num + 1} / {self.valid_dl_len} | {self.state.metric}')
 
-            # cal valid  metric
-            self.epoch_metric.update(self.agg_metric())
+                # cal valid  metric
+                self.epoch_metric.update(self.agg_metric())
 
             # epoch scheduler
             if self.scheduler is not None and self.scheduler_type == "epoch":

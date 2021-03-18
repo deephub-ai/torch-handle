@@ -23,6 +23,7 @@ class BaseContext(ObjectDict):
         :param logging_file :
         :param progress :
         :param model_file :
+        :param ft_fn : finetune function
         """
 
         self.output_dir = None
@@ -33,6 +34,7 @@ class BaseContext(ObjectDict):
         self.progress = "bar"
         self.uuid = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
         self.model_file = None
+        self.ft_fn=None
         self.update(kwargs)
         if self.output_dir is not None:
             self.output_dir = Path(self.output_dir)
@@ -70,7 +72,13 @@ class BaseContext(ObjectDict):
     #############################
     # flow
     #############################
-
+    def train_start_fn(self, session: Session):
+        """
+        befor train start
+        :param session:
+        :return:
+        """
+        pass
     def init_state_fn(self):
         """init status
         :return: ObjectDict
