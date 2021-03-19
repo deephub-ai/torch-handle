@@ -17,9 +17,9 @@ class FP16Context(BaseContext):
             super().loss_fn(session)
 
     def backward_fn(self, session: Session):
-        session.state.loss = session.scaler.scale(session.state.loss)
-        gradients = torch.ones_like(session.state.loss)
-        session.state.loss.backward(gradients)
+        loss = session.scaler.scale(session.state.loss)
+        gradients = torch.ones_like(loss)
+        loss.backward(gradients)
         # Gradient Accumulation
         if self.ga_steps(session):
             session.scaler.step(session.optimizer)
