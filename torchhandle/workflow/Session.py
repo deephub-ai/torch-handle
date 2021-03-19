@@ -51,9 +51,9 @@ class Session(ObjectDict):
         # Finetune
         if self.ctx.ft_fn is not None:
             if self.ft_args is not None:
-                self.ft(self,**self.ft_args)
+                self.ctx.ft_fn(self,**self.ft_args)
             else :
-                self.ft(self)
+                self.ctx.ft_fn(self)
         self.model = self.model.to(self.device)
         criterion_args = {}
         if "args" in self.ctx.criterion:

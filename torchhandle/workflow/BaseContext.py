@@ -50,7 +50,7 @@ class BaseContext(ObjectDict):
     # Context
     #############################
 
-    def make_train_session(self, device, dataloader, fold_tag="", model_file=None):
+    def make_train_session(self, device, dataloader, fold_tag="", model_file=None,ft_args=None):
         """Create train session object
         :return:Session
         """
@@ -67,6 +67,7 @@ class BaseContext(ObjectDict):
                        logging_file=self.logging_file,
                        progress=self.progress,
                        model_file=model_file,
+                       ft_args=ft_args,
                        session_type="train")
 
     #############################
@@ -130,6 +131,7 @@ class BaseContext(ObjectDict):
         x = session.state.input_batch.to(session.device)
         session.state.output_batch = session.model(x)
 
+
     def loss_fn(self, session: Session):
         """
         Calculate the loss function
@@ -138,6 +140,7 @@ class BaseContext(ObjectDict):
         """
         y = session.state.target_batch.to(session.device)
         session.state.loss = session.criterion(session.state.output_batch, y)
+
 
     def backward_fn(self, session: Session):
         """
