@@ -428,12 +428,12 @@ session.train(EPOCHS)
 
 </p>
 </details>
+<summary>06 微调模型  </summary>
+<p>examples/06.finetune-model.py</p>
+<summary>07 Cuda 混合精度训练  </summary>
+<p>examples/07.cuda-amp.py</p>
 
 ## TODO
-
-微调支持
-
-torch混合精度
 
 推理函数实现
 

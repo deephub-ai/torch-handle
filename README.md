@@ -431,11 +431,9 @@ session.train(EPOCHS)
 </p>
 </details>
 
+<p>more example please check examples fold and docs</p>
+
 ## TODO
-
-Fine-tunning setting
-
-torch AMP
 
 inference function
 

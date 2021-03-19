@@ -429,12 +429,13 @@ session.train(EPOCHS)
 
 </p>
 </details>
+<summary>06 Finetune setting  </summary>
+<p>examples/06.finetune-model.py</p>
+<summary>07 Cuda amp training  </summary>
+<p>examples/07.cuda-amp.py</p>
 
 ## TODO
 
-Fine-tunning setting
-
-torch AMP
 
 inference function
 
