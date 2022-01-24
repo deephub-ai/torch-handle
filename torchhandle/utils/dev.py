@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import torchhandle
 from pprint import pprint
 def show_scheduler_lr_plt(ctx, epoch):
     if ctx.scheduler is None:
@@ -53,6 +54,7 @@ def print_torch_info():
         ver["torch_xla"] = torch_xla.__version__
     except :
         pass
+    ver["torchhandle"] = torchhandle.__version__
     pprint(ver)
 
 

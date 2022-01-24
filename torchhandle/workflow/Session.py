@@ -246,6 +246,13 @@ class Session(ObjectDict):
                     metric[f"{self.stage}_{m.name[i]}"] = mt[i].tolist()
                 else:
                     metric[f"{self.stage}_{m.name[i]}"] = mt[i]
+        # renew metric object
+        self[f"{self.stage}_metric"]=[]
+        for mf in self.ctx.metric_fn:
+            metric_args = {}
+            if "args" in mf:
+                metric_args = mf["args"]
+            self[f"{self.stage}_metric"].append(mf["fn"](**metric_args))
         return metric
         # metric_list = {}
         metric = {}
