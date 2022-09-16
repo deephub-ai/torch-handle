@@ -1,33 +1,25 @@
 import matplotlib.pyplot as plt
 import torchhandle
 from pprint import pprint
-def show_scheduler_lr_plt(ctx, epoch):
-    if ctx.scheduler is None:
+def show_scheduler_lr_plt(scheduler,epoch,scheduler_type="epoch",bn=1):
+    if scheduler is None:
         print("No Scheduler found")
         exit()
     lrs = []
-    eps=[]
-    ctx.init_state_fn()
-    bn=1
     for ep in range(1,epoch+1):
-        ctx.set_state(current_epoch=ep)
-        if ctx.scheduler_type == "epoch":
-            ctx.scheduler_step_fn()
-            lrs.append(ctx.scheduler.get_last_lr())
-            eps.append(ep)
-        else:
-            bn=len(ctx.dataloader["train"])
+        if scheduler_type == "epoch":
+            scheduler.step()
+            lrs.append(scheduler.get_last_lr())
 
-            ctx.set_state(total_epoch=bn)
-            for bt in  range(bn):
-                ctx.set_state(current_batch=bt)
-                ctx.scheduler_step_fn()
-                lrs.append(ctx.scheduler.get_last_lr())
-                eps.append(ep)
+        else:
+            for bt in range(bn):
+                scheduler.step()
+                lrs.append(scheduler.get_last_lr())
+
     fig, ax1 = plt.subplots()
     ax1.plot(lrs, 'r-')
     ax1.set_ylabel('LR', color='r')
-    if ctx.scheduler_type == "epoch":
+    if scheduler_type == "epoch":
         ax1.set_xlabel(f"epoch total:{epoch}", color='b')
     else:
         ax1.set_xlabel(f"{bn} batches pre epoch,total :{epoch}", color='b')
@@ -56,5 +48,3 @@ def print_torch_info():
         pass
     ver["torchhandle"] = torchhandle.__version__
     pprint(ver)
-
-

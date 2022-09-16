@@ -6,7 +6,8 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 from tqdm.auto import tqdm
 
-from torchhandle.utils import ObjectDict, RedirectStart, RedirectStop
+from torchhandle.utils import ObjectDict, RedirectStart, RedirectStop,show_scheduler_lr_plt
+
 
 
 class Session(ObjectDict):
@@ -350,6 +351,24 @@ class Session(ObjectDict):
 
         with open(str(self.session_dir / filename), "w") as f:
             json.dump(rep, f, indent=3, separators=(',', ':'))
+    def debug_model(self):
+        self.ctx.train_start_fn(self)
+        self.show_session_summary(1)
+        self.state = self.ctx.init_state_fn()
+        self.stage = "dev"
+        self.model.train()
+        train_dataloader = self.train_dl
+        self.ctx.epoch_start_fn(self)
+        for batch_num, data in enumerate(train_dataloader):
+            self.state.current_batch = batch_num
+            self.ctx.init_batch_data_fn(data, self)
+            self.ctx.forward_fn(self)
+            break
+        return self.state
+    def show_scheduler_lr(self,epochs):
+        show_scheduler_lr_plt(self.scheduler,epochs,self.scheduler_type,bn=len(self.train_dl))
+
+            
 
 
 # https://discuss.pytorch.org/t/different-learning-rate-for-a-specific-layer/33670/10
